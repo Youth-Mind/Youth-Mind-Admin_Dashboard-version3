@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لوحة إدارة مقاييس المراهقين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#10203A;
+    --bg2:#152A47;
+    --card:#1B3255;
+    --card-line:#2C4870;
+    --amber:#E0A94C;
+    --amber-dim:#8A6A2E;
+    --ink:#EAF0F8;
+    --muted:#9FB3CC;
+    --good:#3FAE7C;
+    --mid:#E0A94C;
+    --bad:#D9645A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Tajawal', Arial, sans-serif;min-height:100vh;
+  }
+  h1,h2,h3,.brand{font-family:'Cairo', Arial, sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:0 16px 60px;}
+  header.top{
+    background:var(--bg2);padding:20px 0;margin-bottom:22px;border-bottom:3px solid var(--amber);
+  }
+  header.top .brand{font-size:19px;font-weight:800;}
+  header.top .sub{color:var(--muted);font-size:12.5px;margin-top:2px;}
+
+  /* Gate */
+  .gate-wrap{max-width:380px;margin:80px auto;padding:0 16px;text-align:center;}
+  .gate-card{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:30px 24px;}
+  .gate-card .lock{margin:0 auto 14px;width:38px;height:38px;color:var(--amber);}
+  .gate-card h2{margin:0 0 6px;font-size:18px;}
+  .gate-card p{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  .gate-card input{
+    width:100%;padding:12px;border-radius:9px;border:1px solid var(--card-line);
+    background:#0F2038;color:var(--ink);font-size:15px;text-align:center;letter-spacing:2px;margin-bottom:12px;
+  }
+  .gate-card button{
+    width:100%;padding:12px;border-radius:9px;border:none;background:var(--amber);
+    color:#20160A;font-weight:800;font-family:'Cairo',Arial,sans-serif;cursor:pointer;font-size:14.5px;
+  }
+  .gate-err{color:var(--bad);font-size:12.5px;margin-top:10px;display:none;}
+  .gate-err.show{display:block;}
+
+  /* Dashboard */
+  .card{
+    background:var(--card);border:1px solid var(--card-line);border-radius:14px;
+    padding:20px 22px;margin-bottom:18px;
+  }
+  .card h2{font-size:17px;margin:0 0 4px;}
+  .card h3{font-size:14.5px;margin:0 0 12px;color:var(--ink);}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .toolbar .actions{display:flex;gap:8px;}
+  .btn-mini{
+    background:transparent;border:1px solid var(--card-line);color:var(--ink);
+    padding:8px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:'Tajawal',Arial,sans-serif;
+  }
+  .btn-mini:hover{border-color:var(--amber);}
+  .btn-mini.primary{background:var(--amber);color:#20160A;border:none;font-weight:700;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;}
+  .stat-box{background:var(--bg2);border-radius:11px;padding:16px;text-align:center;border:1px solid var(--card-line);}
+  .stat-box .num{font-size:26px;font-weight:800;font-family:'Cairo',Arial,sans-serif;color:var(--amber);}
+  .stat-box .lbl{font-size:11.5px;color:var(--muted);margin-top:4px;}
+
+  .demo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+  .demo-card{background:var(--bg2);border-radius:11px;padding:14px;border:1px solid var(--card-line);}
+
+  .scale-summary{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+  .scale-badge{
+    min-width:78px;text-align:center;padding:10px 8px;border-radius:10px;font-weight:800;
+    font-family:'Cairo',Arial,sans-serif;font-size:15px;
+  }
+  .badge-good{background:rgba(63,174,124,.18);color:var(--good);}
+  .badge-mid{background:rgba(224,169,76,.18);color:var(--mid);}
+  .badge-bad{background:rgba(217,100,90,.18);color:var(--bad);}
+  .scale-summary .txt{font-size:12.5px;color:var(--muted);line-height:1.7;}
+
+  canvas{max-width:100%;}
+  .empty-state{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px;}
+  .legend-note{font-size:11.5px;color:var(--muted);margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;}
+  .legend-note span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  table.raw{width:100%;border-collapse:collapse;font-size:12px;}
+  table.raw th, table.raw td{border:1px solid var(--card-line);padding:6px 8px;text-align:center;}
+  table.raw th{background:var(--bg2);color:var(--muted);font-weight:600;}
+  .raw-wrap{overflow-x:auto;max-height:360px;overflow-y:auto;}
+
+  details.matrix{margin-top:14px;}
+  details.matrix summary{
+    cursor:pointer;font-size:13px;color:var(--amber);font-weight:700;padding:8px 0;list-style:none;
+  }
+  details.matrix summary::-webkit-details-marker{display:none;}
+  details.matrix summary:before{content:"▸ ";}
+  details.matrix[open] summary:before{content:"▾ ";}
+  table.matrix{width:100%;border-collapse:collapse;font-size:11.5px;}
+  table.matrix th, table.matrix td{border:1px solid var(--card-line);padding:5px 7px;text-align:center;white-space:nowrap;}
+  table.matrix th{background:var(--bg2);color:var(--muted);font-weight:600;position:sticky;top:0;}
+  table.matrix td.student-name{text-align:right;font-weight:600;color:var(--ink);position:sticky;right:0;background:var(--card);white-space:nowrap;}
+  .q-legend{font-size:11.5px;color:var(--muted);line-height:2;margin-top:10px;}
+  .q-legend b{color:var(--ink);}
+
+  .qa-list{display:flex;flex-direction:column;gap:8px;}
+  .qa-row{
+    display:flex;justify-content:space-between;gap:14px;background:var(--bg2);
+    border:1px solid var(--card-line);border-radius:9px;padding:10px 12px;font-size:13px;
+  }
+  .qa-row .qa-q{flex:1;line-height:1.6;}
+  .qa-row .qa-a{flex-shrink:0;font-weight:700;color:var(--amber);white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">لوحة إدارة مقاييس المراهقين</div>
+    <div class="sub">عرض داخلي خاص بالباحثة فقط</div>
+  </div>
+</header>
+
+<div id="gate" class="gate-wrap">
+  <div class="gate-card">
+    <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+    <h2>صفحة محمية</h2>
+    <p>أدخل كلمة المرور لعرض النتائج والرسوم البيانية</p>
+    <input id="pwInput" type="password" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter') tryLogin()">
+    <button onclick="tryLogin()">دخول</button>
+    <div class="gate-err" id="gateErr">كلمة المرور غير صحيحة</div>
+  </div>
+</div>
+
+<div class="wrap" id="dashRoot" style="display:none;"></div>
+
+<script>
+/* Change this to whatever password you want */
+const ADMIN_PASSWORD = "raouth2026";
+
+/* Paste the same Web App URL used in the survey page. */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyepMeC7XsdiuVSINVnn6dxjoLoa8jC8tmj3NU2Hot7RFU4T8GElI2rDMuqSurs3YR-/exec";
+
+const LEVELS = [
+  "لا تنطبق علي إطلاقاً",
+  "تنطبق علي بدرجة قليلة",
+  "تنطبق علي بدرجة متوسطة",
+  "تنطبق علي بدرجة كبيرة",
+  "تنطبق علي بدرجة كبيرة جداً"
+];
+
+let CURRENT_ADMIN_PW = "";
+
+function tryLogin(){
+  const val = document.getElementById('pwInput').value;
+  if(val === ADMIN_PASSWORD){
+    CURRENT_ADMIN_PW = val;
+    document.getElementById('gate').style.display='none';
+    document.getElementById('dashRoot').style.display='block';
+    loadDashboard();
+  } else {
+    document.getElementById('gateErr').classList.add('show');
+  }
+}
+
+async function clearAllData(){
+  const step1 = confirm('تحذير: هذا الإجراء سيمسح كل بيانات الطلاب المسجلة نهائيًا من كل الشيتات، ولا يمكن التراجع عنه.\n\nهل أنتِ متأكدة من المتابعة؟');
+  if(!step1) return;
+  const typed = prompt('للتأكيد النهائي، اكتبي كلمة "مسح" بالضبط:');
+  if(typed !== 'مسح'){ alert('تم إلغاء العملية، لم يُحذف أي شيء.'); return; }
+
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ __action: 'clear_all', __password: CURRENT_ADMIN_PW })
+    });
+  }catch(e){ console.error('clear error', e); }
+
+  alert('تم إرسال أمر المسح. جاري تحديث الصفحة...');
+  setTimeout(loadDashboard, 1500);
+}
+
+/* ---------------- DATA (mirrors survey.html) ---------------- */
+const SCALES = [
+{
+id:"father", title:"مقياس غياب الدور الأبوي",
+  itemsCount:24,
+  reverse:[3,7,14,15,19,22,23],
+  extraKey:"father_status", extraLabel:"الحالة الأسرية للأب",
+  items:[
+    "أشعر أن والدي لا يهتم بمشاعري عندما أكون منزعجًا.",
+    "تبدو متابعة والدي لسلوكي وتصرفاتي محدودة.",
+    "يشارك والدي في متابعة الأنشطة والأحداث المهمة في حياتي. (*)",
+    "أشعر بنقص المساندة النفسية من والدي عند تعرضي للمواقف الصعبة.",
+    "أشعر بقلة توجيه والدي لي نحو السلوك الصحيح عند ارتكابي للأخطاء.",
+    "نادرًا ما يشارك والدي في الأنشطة أو المناسبات المهمة بالنسبة لي.",
+    "أشعر أن والدي يفهم مشاعري ويهتم بها. (*)",
+    "نادرًا ما يهتم والدي بمعرفة الأماكن التي أتردد عليها.",
+    "يقتصر تواصلي مع والدي على الأمور الضرورية فقط.",
+    "أشعر بأن والدي لا يمنحني التقدير والتشجيع الذي أحتاج إليه.",
+    "أشعر أن والدي لا يضع ضوابط واضحة لسلوكي.",
+    "أفتقد الحوار مع والدي حول ما أمر به في حياتي اليومية.",
+    "عندما أمر بموقف صعب لا أحصل من والدي على الدعم الذي أحتاجه.",
+    "يحرص والدي على إرشادي لاتخاذ القرارات المناسبة. (*)",
+    "أستمتع بقضاء الوقت مع والدي والتحدث معه. (*)",
+    "أشعر أن والدي لا يقدر نجاحاتي بالقدر الذي أحتاج إليه.",
+    "أتصرف في كثير من الأمور دون أي توجيه من والدي.",
+    "أشعر بقلة مشاركة والدي لي في اتخاذ القرارات المهمة المتعلقة بمستقبلي.",
+    "يحرص والدي على مواساتي عندما أتعرض لموقف صعب. (*)",
+    "أشعر أن والدي لا يهتم بمتابعة نتائجي الدراسية ومستوى تحصيلي.",
+    "أشعر بأن والدي لا يعرف الكثير عن اهتماماتي الحالية.",
+    "أشعر أن والدي يتفهم مشاعري عندما أمر بمواقف صعبة. (*)",
+    "يهتم والدي لتصحيح أخطائي عند الحاجة. (*)",
+    "أشعر بقلة الوقت الذي يخصصه والدي للتعرف على اهتماماتي ومشكلاتي."
+  ]
+},
+{
+id:"violence", title:"مقياس العنف لدى المراهقين",
+  itemsCount:24,
+  reverse:[5,9,11,15,19,22],
+  items:[
+    "أستخدم القوة الجسدية عندما أشعر بالغضب.",
+    "أستخدم ألفاظًا جارحة عندما أغضب.",
+    "أستخدم وسائل التواصل الاجتماعي في مضايقة الآخرين أو الإساءة إليهم.",
+    "أتشاجر جسديًا مع الآخرين عند حدوث خلاف معهم.",
+    "أعبر عن رأيي أثناء الخلاف بأسلوب مهذب ومحترم. (*)",
+    "أتجاهل بعض الأشخاص لمعاقبتهم.",
+    "أدفع من يضايقني أو يثير غضبي.",
+    "أرفع صوتي أثناء الخلاف مع الآخرين.",
+    "أحرص على إشراك جميع زملائي في الأنشطة الجماعية دون استبعاد أحد. (*)",
+    "أكسر الأشياء عندما أنفعل بشدة.",
+    "أختار كلماتي بعناية حتى عندما أكون غاضبًا. (*)",
+    "أحرّض الآخرين ضد شخص أغضبني.",
+    "ألجأ إلى العنف البدني لحسم الخلافات مع الآخرين.",
+    "أهدد الآخرين بالكلام عندما أشعر بالاستفزاز.",
+    "أتعامل مع الخلافات مع الآخرين دون محاولة التأثير على علاقتهم بزملائهم. (*)",
+    "أستخدم الضرب لإجبار الآخرين على تنفيذ ما أريده.",
+    "أتعمد السخرية من الآخرين عندما أختلف معهم.",
+    "أُحرج الآخرين أمام أصدقائهم أو زملائهم.",
+    "أتحكم في تصرفاتي حتى عندما أتعرض للاستفزاز. (*)",
+    "أعبر عن غضبي بطريقة حادة ومؤذية للآخرين.",
+    "أتعمد استبعاد بعض الزملاء من الأنشطة الجماعية.",
+    "أحرص على حل الخلافات دون استخدام القوة الجسدية. (*)",
+    "أستخدم كلمات تقلل من شأن الآخرين أثناء الخلاف.",
+    "أنشر شائعات عن شخص أغضبني."
+  ]
+},
+{
+id:"selfesteem", title:"مقياس تقدير الذات",
+  itemsCount:24,
+  reverse:[5,9,10,17,22,24],
+  extraKey:"birth_order", extraLabel:"ترتيب المراهق بين إخوته",
+  items:[
+    "أشعر أنني شخص ذو قيمة وأهمية.",
+    "أشعر أن الآخرين يتقبلونني كما أنا.",
+    "تجعلني أسرتي أشعر بأن لدي قدرات وإمكانات مميزة.",
+    "أثق في قدرتي على إنجاز الأعمال التي أقوم بها.",
+    "أشعر أن الآخرين يتجنبون التعامل معي. (*)",
+    "أحصل على الدعم من أسرتي عندما أحتاج إليه.",
+    "أتقبل نفسي حتى عند ارتكابي بعض الأخطاء.",
+    "أستطيع تكوين صداقات بسهولة.",
+    "أشعر أن أسرتي لا تهتم بآرائي ومشاعري. (*)",
+    "أشعر أنني أقل كفاءة من معظم زملائي. (*)",
+    "أشعر بالارتياح عند التعامل مع الآخرين.",
+    "أشعر أنني شخص مهم داخل أسرتي.",
+    "أستطيع مواجهة الصعوبات التي تعترضني.",
+    "أشعر بأن وجودي له قيمة لدى زملائي وأصدقائي.",
+    "أستطيع التحدث مع أسرتي عن مشكلاتي بحرية.",
+    "أشعر بالرضا عن نفسي في معظم الأوقات.",
+    "أشعر أنني غير مرغوب فيَّ بين أصدقائي. (*)",
+    "أشعر أن أفراد أسرتي يثقون في قدراتي.",
+    "أعتقد أن لدي قدرات جيدة تمكنني من النجاح.",
+    "لدي علاقات جيدة مع زملائي.",
+    "تشجعني أسرتي على اتخاذ قرارات مناسبة لعمري.",
+    "غالبًا ما أشعر بعدم الرضا عن نفسي. (*)",
+    "أشارك في الأنشطة الاجتماعية بثقة.",
+    "أشعر بأنني غير مقدر داخل أسرتي. (*)"
+  ]
+}
+];
+
+let chartRefs = [];
+
+async function loadDashboard(){
+  const root = document.getElementById('dashRoot');
+  root.innerHTML = `<div class="card"><div class="empty-state">جاري تحميل البيانات...</div></div>`;
+  chartRefs.forEach(c=>c.destroy());
+  chartRefs = [];
+
+  if(APPS_SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
+    root.innerHTML = `<div class="card"><div class="empty-state">لم يتم ربط مصدر البيانات بعد.<br>أضف رابط Google Apps Script داخل الكود أولًا.</div></div>`;
+    return;
+  }
+
+  let records = [];
+  try{
+    const res = await fetch(APPS_SCRIPT_URL, { method:'GET' });
+    records = await res.json();
+  }catch(e){
+    console.error('fetch error', e);
+    root.innerHTML = `<div class="card"><div class="empty-state">تعذّر تحميل البيانات. تأكد من اتصال الإنترنت أو من صلاحيات الوصول لملف Apps Script.</div></div>
+    <div class="toolbar" style="justify-content:center;"><button class="btn-mini" onclick="loadDashboard()">إعادة المحاولة</button></div>`;
+    return;
+  }
+
+  if(!records || records.length===0){
+    root.innerHTML = `<div class="card"><div class="empty-state">لا توجد استجابات مسجّلة حتى الآن.<br>شارك رابط الاستمارة مع الطلاب لتبدأ البيانات بالظهور هنا.</div></div>
+    <div class="toolbar" style="justify-content:center;"><button class="btn-mini" onclick="loadDashboard()">تحديث</button></div>`;
+    return;
+  }
+
+  window._records = records;
+
+  const genderCount = { "ذكر":0, "أنثى":0 };
+  const ageCount = {};
+  const gradeCount = {};
+  records.forEach(r=>{
+    if(r.gender) genderCount[r.gender] = (genderCount[r.gender]||0)+1;
+    if(r.age) ageCount[r.age] = (ageCount[r.age]||0)+1;
+    if(r.grade) gradeCount[r.grade] = (gradeCount[r.grade]||0)+1;
+  });
+
+  let html = `<div class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;">نظرة عامة</h2>
+      <div class="actions">
+        <button class="btn-mini" onclick="loadDashboard()">تحديث البيانات</button>
+        <button class="btn-mini primary" onclick="exportCSV()">تصدير CSV</button>
+        <button class="btn-mini" style="border-color:var(--bad);color:var(--bad);" onclick="clearAllData()">مسح كل بيانات الطلاب</button>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="num">${records.length}</div><div class="lbl">إجمالي الاستجابات</div></div>
+      <div class="stat-box"><div class="num">${genderCount['ذكر']||0}</div><div class="lbl">ذكور</div></div>
+      <div class="stat-box"><div class="num">${genderCount['أنثى']||0}</div><div class="lbl">إناث</div></div>
+      <div class="stat-box"><div class="num">${Object.keys(gradeCount).length}</div><div class="lbl">صفوف دراسية مختلفة</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <h3 style="margin:0;">التفاصيل الكاملة لطالب واحد</h3>
+    </div>
+    <div class="field-row" style="margin-bottom:14px;">
+      <select id="studentPicker" class="btn-mini" style="width:100%;padding:10px;background:var(--bg2);" onchange="renderStudentDetail(this.value)"></select>
+    </div>
+    <div id="studentDetail"></div>
+  </div>`;
+
+  html += `<div class="card">
+    <h3>البيانات الديموغرافية</h3>
+    <div class="demo-grid">
+      <div class="demo-card"><canvas id="chart_gender"></canvas></div>
+      <div class="demo-card"><canvas id="chart_age"></canvas></div>
+      <div class="demo-card"><canvas id="chart_grade"></canvas></div>
+    </div>
+  </div>`;
+
+  SCALES.forEach(scale=>{
+    html += `<div class="card">
+      <h3>${scale.title}</h3>
+      <div id="summary_${scale.id}"></div>
+      <canvas id="chart_${scale.id}" height="230"></canvas>
+      <div class="legend-note">
+        <span><span class="dot" style="background:var(--good)"></span> منخفض (اتجاه إيجابي / أقل حدة)</span>
+        <span><span class="dot" style="background:var(--mid)"></span> متوسط</span>
+        <span><span class="dot" style="background:var(--bad)"></span> مرتفع</span>
+      </div>
+      ${scale.extraKey ? `<div style="margin-top:18px;"><h3>${scale.extraLabel}</h3><canvas id="chart_extra_${scale.id}"></canvas></div>` : ""}
+      <details class="matrix">
+        <summary>عرض إجابة كل طالب على كل سؤال — ${scale.title}</summary>
+        <div class="raw-wrap" id="matrix_${scale.id}"></div>
+        <div class="q-legend" id="legend_${scale.id}"></div>
+      </details>
+    </div>`;
+  });
+
+  html += `<div class="card">
+    <h3>البيانات الخام (${records.length} استجابة)</h3>
+    <div class="raw-wrap" id="rawTableWrap"></div>
+  </div>`;
+
+  root.innerHTML = html;
+
+  const palette = ['#E0A94C','#3FAE7C','#5B8DEF','#D9645A','#9B7FD1','#4FBEC7'];
+
+  function donut(canvasId, dataObj){
+    const labels = Object.keys(dataObj);
+    const data = Object.values(dataObj);
+    const ctx = document.getElementById(canvasId);
+    if(!ctx || !window.Chart) return;
+    const c = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels, datasets:[{ data, backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }] },
+      options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#EAF0F8', font:{size:11} } } } }
+    });
+    chartRefs.push(c);
+  }
+
+  donut('chart_gender', genderCount);
+  donut('chart_age', ageCount);
+  donut('chart_grade', gradeCount);
+
+  SCALES.forEach(scale=>{
+    const labels = [];
+    const avgs = [];
+    const colors = [];
+    let allVals = [];
+    for(let i=1;i<=scale.itemsCount;i++){
+      const key = scale.id+"_q"+i;
+      const vals = records.map(r=>Number(r[key])).filter(v=>!isNaN(v)&&v>0);
+      allVals = allVals.concat(vals);
+      const avg = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+      labels.push("س"+i);
+      avgs.push(+avg.toFixed(2));
+      const effAvg = scale.reverse.includes(i) ? (6-avg) : avg;
+      colors.push(effAvg<2.5 ? getCss('--good') : (effAvg<=3.5 ? getCss('--mid') : getCss('--bad')));
+    }
+    const overallAvg = allVals.length ? allVals.reduce((a,b)=>a+b,0)/allVals.length : 0;
+    let badgeCls = 'badge-mid', badgeTxt='متوسط';
+    if(overallAvg && overallAvg<2.5){ badgeCls='badge-good'; badgeTxt='منخفض'; }
+    else if(overallAvg>3.5){ badgeCls='badge-bad'; badgeTxt='مرتفع'; }
+
+    document.getElementById('summary_'+scale.id).innerHTML = `
+      <div class="scale-summary">
+        <div class="scale-badge ${badgeCls}">${overallAvg?overallAvg.toFixed(2):'—'}</div>
+        <div class="txt">المتوسط العام للمقياس (من 5) — المستوى: <b>${badgeTxt}</b><br>مبني على ${allVals.length} إجابة مسجّلة عبر ${records.length} استمارة</div>
+      </div>`;
+
+    const ctx = document.getElementById('chart_'+scale.id);
+    if(ctx && window.Chart){
+      const c = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'المتوسط', data:avgs, backgroundColor:colors }] },
+        options:{
+          responsive:true,
+          plugins:{ legend:{display:false} },
+          scales:{ y:{ min:0, max:5, ticks:{stepSize:1, color:'#9FB3CC'}, grid:{color:'#2C4870'} },
+                   x:{ ticks:{color:'#9FB3CC', font:{size:10}}, grid:{display:false} } }
+        }
+      });
+      chartRefs.push(c);
+    }
+
+    if(scale.extraKey){
+      const cnt = {};
+      records.forEach(r=>{ if(r[scale.extraKey]) cnt[r[scale.extraKey]] = (cnt[r[scale.extraKey]]||0)+1; });
+      if(Object.keys(cnt).length>0) donut('chart_extra_'+scale.id, cnt);
+    }
+
+    renderMatrix(scale, records);
+  });
+
+  renderRawTable(records);
+  window._records = records;
+
+  const picker = document.getElementById('studentPicker');
+  if(picker){
+    picker.innerHTML = records.map((r,i)=>{
+      const label = r.name && String(r.name).trim() ? r.name : ('طالب ' + (i+1));
+      return `<option value="${i}">${label} — ${r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('ar-EG') : ''}</option>`;
+    }).join('');
+    renderStudentDetail(0);
+  }
+}
+
+function renderStudentDetail(idx){
+  const records = window._records || [];
+  const r = records[Number(idx)];
+  const box = document.getElementById('studentDetail');
+  if(!box || !r) return;
+
+  let demoHtml = `<div class="demo-grid" style="margin-bottom:16px;">
+    <div class="demo-card"><b>العمر:</b> ${r.age || '-'}</div>
+    <div class="demo-card"><b>النوع:</b> ${r.gender || '-'}</div>
+    <div class="demo-card"><b>الصف الدراسي:</b> ${r.grade || '-'}</div>
+    ${r.father_status ? `<div class="demo-card"><b>الحالة الأسرية للأب:</b> ${r.father_status}</div>` : ''}
+    ${r.birth_order ? `<div class="demo-card"><b>ترتيب المراهق بين إخوته:</b> ${r.birth_order}</div>` : ''}
+  </div>`;
+
+  let scalesHtml = '';
+  SCALES.forEach(scale=>{
+    scalesHtml += `<h3 style="margin-top:18px;">${scale.title}</h3><div class="qa-list">`;
+    for(let i=1;i<=scale.itemsCount;i++){
+      const key = scale.id+'_q'+i;
+      const v = r[key];
+      const levelLabel = v ? LEVELS[Number(v)-1] : null;
+      scalesHtml += `<div class="qa-row">
+        <div class="qa-q"><b>س${i}.</b> ${scale.items[i-1]}</div>
+        <div class="qa-a">${v ? `${v} — ${levelLabel}` : 'بلا إجابة'}</div>
+      </div>`;
+    }
+    scalesHtml += `</div>`;
+  });
+
+  box.innerHTML = demoHtml + scalesHtml;
+}
+
+function renderMatrix(scale, records){
+  const wrap = document.getElementById('matrix_'+scale.id);
+  if(!wrap) return;
+  if(records.length===0){ wrap.innerHTML = '<div class="empty-state">لا توجد بيانات بعد.</div>'; return; }
+
+  let head = '<tr><th>الطالب</th>';
+  for(let i=1;i<=scale.itemsCount;i++) head += `<th title="${scale.items[i-1]||''}">س${i}</th>`;
+  head += '</tr>';
+
+  let rows = '';
+  records.forEach((r,idx)=>{
+    const label = r.name && String(r.name).trim() ? r.name : ('طالب ' + (idx+1));
+    rows += `<tr><td class="student-name">${label}</td>`;
+    for(let i=1;i<=scale.itemsCount;i++){
+      const key = scale.id+'_q'+i;
+      const v = r[key];
+      let bg = '';
+      if(v){
+        const num = Number(v);
+        const eff = scale.reverse.includes(i) ? (6-num) : num;
+        const c = eff<2.5 ? getCss('--good') : (eff<=3.5 ? getCss('--mid') : getCss('--bad'));
+        bg = `style="background:${c}22;color:${c};font-weight:700;"`;
+      }
+      rows += `<td ${bg}>${v!==undefined && v!=='' ? v : '-'}</td>`;
+    }
+    rows += '</tr>';
+  });
+
+  wrap.innerHTML = `<table class="matrix">${head}${rows}</table>`;
+
+  const legendEl = document.getElementById('legend_'+scale.id);
+  if(legendEl){
+    legendEl.innerHTML = scale.items.map((t,i)=>`<div><b>س${i+1}:</b> ${t}</div>`).join('');
+  }
+}
+
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+function renderRawTable(records){
+  const cols = ['submitted_at','name','age','gender','grade'];
+  let head = '<tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '<th>مج.العنف</th><th>مج.غياب الأب</th><th>مج.تقدير الذات</th></tr>';
+  let rows = '';
+  records.forEach(r=>{
+    const violenceSum = sumScale(r,'violence',24);
+    const fatherSum = sumScale(r,'father',24);
+    const esteemSum = sumScale(r,'selfesteem',24);
+    rows += '<tr>' + cols.map(c=>`<td>${(r[c]||'-')}</td>`).join('') +
+      `<td>${violenceSum}</td><td>${fatherSum}</td><td>${esteemSum}</td></tr>`;
+  });
+  document.getElementById('rawTableWrap').innerHTML = `<table class="raw">${head}${rows}</table>`;
+}
+
+function sumScale(r, id, n){
+  let s=0, has=false;
+  for(let i=1;i<=n;i++){
+    const v = Number(r[id+"_q"+i]);
+    if(!isNaN(v) && v>0){ s+=v; has=true; }
+  }
+  return has ? s : '-';
+}
+
+function exportCSV(){
+  const records = window._records || [];
+  if(records.length===0) return;
+  const keys = new Set();
+  records.forEach(r=>Object.keys(r).forEach(k=>keys.add(k)));
+  const cols = Array.from(keys);
+  let csv = cols.join(',') + '\n';
+  records.forEach(r=>{
+    csv += cols.map(c=>{
+      let v = r[c]!==undefined ? String(r[c]) : '';
+      v = v.replace(/"/g,'""');
+      return `"${v}"`;
+    }).join(',') + '\n';
+  });
+  const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'مقاييس_المراهقين_البيانات.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
